@@ -104,7 +104,7 @@ const PHOTO_ITEMS = Object.entries(CATEGORY_FILES).flatMap(([category, files]) =
 );
 
 const WEBHOOK_ORDER_CONFIG = {
-  webhookUrl: 'https://n8n.deryugin777.ru/webhook-test/photo-order',
+  webhookUrl: 'https://n8n.deryugin777.ru/webhook/photo-order',
   webhookSecret: 'whsec_83a2c18c7719671edb0cd08b2dfba88f8200d8683c76509f',
   githubOwner: 'deruginalex0-netizen',
   githubRepo: 'pashka_spit',
