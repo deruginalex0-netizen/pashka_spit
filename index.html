@@ -73,6 +73,66 @@
     </aside>
 
     <div class="overlay" id="overlay"></div>
+
+    <div class="modal" id="order-modal" aria-hidden="true">
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="order-modal-title">
+        <div class="modal__header">
+          <h3 id="order-modal-title">Оформление заказа</h3>
+          <button class="icon-btn" id="close-order-modal" aria-label="Закрыть форму">×</button>
+        </div>
+
+        <form class="order-form" id="order-form">
+          <label class="order-form__field">
+            <span>ФИО</span>
+            <input id="order-fullname" name="fullName" type="text" autocomplete="name" required />
+          </label>
+
+          <label class="order-form__field">
+            <span>Почта</span>
+            <input id="order-email" name="email" type="email" autocomplete="email" required />
+          </label>
+
+          <label class="order-form__field">
+            <span>Telegram username</span>
+            <input
+              id="order-telegram"
+              name="telegram"
+              type="text"
+              placeholder="@username или 123456789"
+              autocomplete="off"
+              required
+            />
+          </label>
+
+          <p class="order-form__error" id="order-form-error" role="alert" aria-live="polite"></p>
+
+          <button class="btn order-form__submit" id="order-submit" type="submit">Отправить заказ</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="order-success-modal" aria-hidden="true">
+      <div class="modal__dialog modal__dialog--success" role="dialog" aria-modal="true" aria-labelledby="order-success-title">
+        <div class="modal__header">
+          <h3 id="order-success-title">Заказ оформлен</h3>
+          <button class="icon-btn" id="close-order-success" aria-label="Закрыть окно">×</button>
+        </div>
+
+        <p class="order-success__text">
+          Чтобы получить заказ, перейдите в Telegram-бота по ссылке ниже и активируйте его.
+        </p>
+        <a
+          class="btn order-success__link"
+          id="order-bot-link"
+          href="https://t.me/your_photo_delivery_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Перейти в Telegram-бот
+        </a>
+      </div>
+    </div>
+
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lightbox__close" id="close-lightbox" aria-label="Закрыть фото">×</button>
       <img id="lightbox-image" src="" alt="" />

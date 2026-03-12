@@ -103,12 +103,22 @@ const PHOTO_ITEMS = Object.entries(CATEGORY_FILES).flatMap(([category, files]) =
   }))
 );
 
+const WEBHOOK_ORDER_CONFIG = {
+  webhookUrl: 'https://n8n.deryugin777.ru/webhook-test/photo-order',
+  webhookSecret: 'whsec_83a2c18c7719671edb0cd08b2dfba88f8200d8683c76509f',
+  githubOwner: 'deruginalex0-netizen',
+  githubRepo: 'pashka_spit',
+  // Используйте ссылку на бота без параметра start, order_id добавится автоматически.
+  activationBotUrl: 'https://t.me/your_photo_delivery_bot',
+};
+
 const state = {
   activeCategory: 'all',
   cart: loadCart(),
   randomizedPhotos: shufflePhotos(PHOTO_ITEMS),
   filterTransitionId: 0,
   galleryTransitionAnim: null,
+  isOrderSubmitting: false,
 };
 
 const elements = {
@@ -120,9 +130,21 @@ const elements = {
   cartTotal: document.getElementById('cart-total'),
   cartPanel: document.getElementById('cart-panel'),
   clearCart: document.getElementById('clear-cart'),
+  checkoutButton: document.querySelector('.cart__checkout'),
   overlay: document.getElementById('overlay'),
   openCart: document.getElementById('open-cart'),
   closeCart: document.getElementById('close-cart'),
+  orderModal: document.getElementById('order-modal'),
+  closeOrderModal: document.getElementById('close-order-modal'),
+  orderForm: document.getElementById('order-form'),
+  orderFullName: document.getElementById('order-fullname'),
+  orderEmail: document.getElementById('order-email'),
+  orderTelegram: document.getElementById('order-telegram'),
+  orderFormError: document.getElementById('order-form-error'),
+  orderSubmit: document.getElementById('order-submit'),
+  orderSuccessModal: document.getElementById('order-success-modal'),
+  closeOrderSuccess: document.getElementById('close-order-success'),
+  orderBotLink: document.getElementById('order-bot-link'),
   lightbox: document.getElementById('lightbox'),
   lightboxImage: document.getElementById('lightbox-image'),
   closeLightbox: document.getElementById('close-lightbox'),
@@ -135,7 +157,9 @@ function init() {
   bindCategoryFilters();
   initSlideTabs();
   bindCartControls();
+  bindCheckoutControls();
   bindLightboxControls();
+  applyOrderBotLink();
   renderGallery();
   applyFilterWithFlip(false);
   renderCart();
@@ -209,6 +233,34 @@ function bindCartControls() {
   elements.clearCart.addEventListener('click', clearCart);
 }
 
+function bindCheckoutControls() {
+  elements.checkoutButton.addEventListener('click', () => {
+    if (state.cart.length === 0) {
+      window.alert('Корзина пустая. Добавьте фото перед оформлением.');
+      return;
+    }
+
+    setOrderFormError('');
+    openOrderModal();
+  });
+
+  elements.closeOrderModal.addEventListener('click', closeOrderModal);
+  elements.orderModal.addEventListener('click', (event) => {
+    if (event.target === elements.orderModal) {
+      closeOrderModal();
+    }
+  });
+
+  elements.closeOrderSuccess.addEventListener('click', closeOrderSuccessModal);
+  elements.orderSuccessModal.addEventListener('click', (event) => {
+    if (event.target === elements.orderSuccessModal) {
+      closeOrderSuccessModal();
+    }
+  });
+
+  elements.orderForm.addEventListener('submit', handleOrderSubmit);
+}
+
 function bindLightboxControls() {
   elements.closeLightbox.addEventListener('click', closeLightboxPreview);
   elements.lightbox.addEventListener('click', (event) => {
@@ -221,7 +273,13 @@ function bindLightboxControls() {
     if (event.key !== 'Escape') return;
     closeLightboxPreview();
     closeCart();
+    closeOrderModal();
+    closeOrderSuccessModal();
   });
+}
+
+function applyOrderBotLink() {
+  setOrderBotLink();
 }
 
 function renderGallery() {
@@ -426,6 +484,21 @@ function getCartQty(photoId) {
   return item ? item.qty : 0;
 }
 
+function getCartViewItems() {
+  return state.cart
+    .map((entry) => {
+      const photo = PHOTO_ITEMS.find((item) => item.id === entry.photoId);
+      if (!photo) return null;
+
+      return {
+        ...entry,
+        photo,
+        subtotal: photo.price * entry.qty,
+      };
+    })
+    .filter(Boolean);
+}
+
 function updateGalleryCartButtons() {
   elements.gallery.querySelectorAll('.gallery-item__cart-controls').forEach((controls) => {
     const button = controls.querySelector('[data-add-cart]');
@@ -449,19 +522,7 @@ function updateGalleryCartButtons() {
 }
 
 function renderCart() {
-  const viewItems = state.cart
-    .map((entry) => {
-      const photo = PHOTO_ITEMS.find((item) => item.id === entry.photoId);
-      if (!photo) return null;
-
-      return {
-        ...entry,
-        photo,
-        subtotal: photo.price * entry.qty,
-      };
-    })
-    .filter(Boolean);
-
+  const viewItems = getCartViewItems();
   const totalCount = viewItems.reduce((sum, item) => sum + item.qty, 0);
   const totalPrice = viewItems.reduce((sum, item) => sum + item.subtotal, 0);
 
@@ -526,6 +587,214 @@ function openCart() {
 function closeCart() {
   elements.cartPanel.classList.remove('is-open');
   elements.overlay.classList.remove('is-visible');
+}
+
+function openOrderModal() {
+  closeCart();
+  elements.orderModal.classList.add('is-open');
+  elements.orderModal.setAttribute('aria-hidden', 'false');
+  elements.orderFullName.focus();
+}
+
+function closeOrderModal() {
+  elements.orderModal.classList.remove('is-open');
+  elements.orderModal.setAttribute('aria-hidden', 'true');
+  setOrderFormError('');
+}
+
+function openOrderSuccessModal() {
+  elements.orderSuccessModal.classList.add('is-open');
+  elements.orderSuccessModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeOrderSuccessModal() {
+  elements.orderSuccessModal.classList.remove('is-open');
+  elements.orderSuccessModal.setAttribute('aria-hidden', 'true');
+}
+
+function setOrderFormError(message) {
+  elements.orderFormError.textContent = message;
+}
+
+function setOrderSubmitState(isSubmitting) {
+  state.isOrderSubmitting = isSubmitting;
+  elements.orderSubmit.disabled = isSubmitting;
+  elements.orderSubmit.textContent = isSubmitting ? 'Отправляем...' : 'Отправить заказ';
+}
+
+function validateOrderFields({ fullName, email, telegram }) {
+  if (fullName.length < 5) {
+    return 'Укажите корректные ФИО.';
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!emailPattern.test(email)) {
+    return 'Укажите корректную почту.';
+  }
+
+  const telegramUsernamePattern = /^@?[a-zA-Z0-9_]{5,32}$/;
+  const telegramChatIdPattern = /^-?\d{5,20}$/;
+  if (!telegramUsernamePattern.test(telegram) && !telegramChatIdPattern.test(telegram)) {
+    return 'Укажите Telegram username или числовой chat_id.';
+  }
+
+  return '';
+}
+
+function normalizeTelegramUsername(value) {
+  const trimmed = value.trim();
+  if (/^-?\d{5,20}$/.test(trimmed)) return null;
+  return trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
+}
+
+function normalizeTelegramChatId(value) {
+  const trimmed = value.trim();
+  if (/^-?\d{5,20}$/.test(trimmed)) return trimmed;
+  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
+}
+
+function toWebhookPhotoId(photoUrl) {
+  const decoded = decodeURI(photoUrl);
+  const withoutRoot = decoded.replace(/^photos\//, '');
+  const withoutExtension = withoutRoot.replace(/\.jpg$/i, '');
+  return withoutExtension
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+}
+
+function buildOrderId() {
+  return `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildActivationBotUrl(orderId) {
+  const base = WEBHOOK_ORDER_CONFIG.activationBotUrl;
+  if (!base || !orderId) return base || '#';
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}start=${encodeURIComponent(orderId)}`;
+}
+
+function setOrderBotLink(orderId = '') {
+  elements.orderBotLink.href = buildActivationBotUrl(orderId);
+}
+
+function isWebhookOrderConfigured() {
+  return Boolean(
+    WEBHOOK_ORDER_CONFIG.webhookUrl &&
+      WEBHOOK_ORDER_CONFIG.webhookSecret &&
+      WEBHOOK_ORDER_CONFIG.githubOwner &&
+      WEBHOOK_ORDER_CONFIG.githubRepo &&
+      WEBHOOK_ORDER_CONFIG.activationBotUrl
+  );
+}
+
+function buildOrderPayload(customer) {
+  const items = getCartViewItems();
+  const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+  const totalPrice = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const photoIds = items.flatMap((item) =>
+    Array.from({ length: item.qty }, () => toWebhookPhotoId(item.photo.url))
+  );
+  const orderId = buildOrderId();
+
+  return {
+    order_id: orderId,
+    telegram_chat_id: normalizeTelegramChatId(customer.telegram),
+    telegram_username: normalizeTelegramUsername(customer.telegram),
+    photo_ids: photoIds,
+    github_owner: WEBHOOK_ORDER_CONFIG.githubOwner,
+    github_repo: WEBHOOK_ORDER_CONFIG.githubRepo,
+    customer_full_name: customer.fullName,
+    customer_email: customer.email,
+    total_qty: totalQty,
+    total_price: totalPrice,
+  };
+}
+
+async function sendOrderToWebhook(order) {
+  let response;
+  try {
+    response = await fetch(WEBHOOK_ORDER_CONFIG.webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-webhook-secret': WEBHOOK_ORDER_CONFIG.webhookSecret,
+      },
+      body: JSON.stringify(order),
+    });
+  } catch {
+    throw new Error(
+      'Не удалось обратиться к webhook. Проверьте URL, HTTPS и CORS в n8n.'
+    );
+  }
+
+  const responseText = await response.text();
+  let result = {};
+
+  if (responseText) {
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Webhook вернул не-JSON ответ (HTTP ${response.status}).`);
+    }
+  }
+
+  if (!response.ok || result.status !== 'ok') {
+    throw new Error(result.message || `Ошибка webhook (HTTP ${response.status}).`);
+  }
+
+  return result;
+}
+
+async function handleOrderSubmit(event) {
+  event.preventDefault();
+  if (state.isOrderSubmitting) return;
+
+  if (state.cart.length === 0) {
+    setOrderFormError('Корзина пустая. Добавьте фото перед оформлением.');
+    return;
+  }
+
+  const rawForm = {
+    fullName: elements.orderFullName.value.trim(),
+    email: elements.orderEmail.value.trim(),
+    telegram: elements.orderTelegram.value.trim(),
+  };
+
+  const validationError = validateOrderFields(rawForm);
+  if (validationError) {
+    setOrderFormError(validationError);
+    return;
+  }
+
+  if (!isWebhookOrderConfigured()) {
+    setOrderFormError('Интеграция webhook не настроена. Заполните WEBHOOK_ORDER_CONFIG в script.js.');
+    return;
+  }
+
+  const customer = {
+    fullName: rawForm.fullName,
+    email: rawForm.email,
+    telegram: rawForm.telegram,
+  };
+
+  setOrderFormError('');
+  setOrderSubmitState(true);
+
+  try {
+    const order = buildOrderPayload(customer);
+    const result = await sendOrderToWebhook(order);
+    const deliveredOrderId = result.order_id || order.order_id;
+    setOrderBotLink(deliveredOrderId);
+    clearCart();
+    elements.orderForm.reset();
+    closeOrderModal();
+    openOrderSuccessModal();
+  } catch (error) {
+    setOrderFormError(error instanceof Error ? error.message : 'Ошибка отправки заказа.');
+  } finally {
+    setOrderSubmitState(false);
+  }
 }
 
 function shufflePhotos(items) {

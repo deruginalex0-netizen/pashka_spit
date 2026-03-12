@@ -648,6 +648,119 @@ button {
   pointer-events: auto;
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(21, 15, 10, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal__dialog {
+  width: min(500px, 96vw);
+  border: 1px solid rgba(90, 71, 52, 0.32);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.042) 1px, transparent 0),
+    linear-gradient(180deg, #fcf8ee, #f4e8d4);
+  background-size: 8px 8px, auto;
+  box-shadow: 0 16px 30px rgba(26, 18, 12, 0.28);
+  overflow: hidden;
+}
+
+.modal__dialog--success {
+  width: min(460px, 96vw);
+}
+
+.modal__header {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(90, 71, 52, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.modal__header h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.order-form {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.order-form__field {
+  display: grid;
+  gap: 6px;
+}
+
+.order-form__field span {
+  font-size: 0.88rem;
+  color: var(--paper-muted);
+}
+
+.order-form__field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(89, 69, 49, 0.36);
+  border-radius: 10px;
+  background: rgba(255, 252, 246, 0.97);
+  color: var(--paper-ink);
+  font: inherit;
+}
+
+.order-form__field input:focus {
+  outline: 2px solid rgba(157, 63, 47, 0.35);
+  outline-offset: 1px;
+}
+
+.order-form__error {
+  min-height: 1.2em;
+  margin: 0;
+  color: #8f2f20;
+  font-size: 0.86rem;
+}
+
+.order-form__submit {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.order-form__submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.order-success__text {
+  margin: 0;
+  padding: 18px 16px 8px;
+  color: var(--paper-muted);
+  line-height: 1.45;
+}
+
+.order-success__link {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 0 16px 18px;
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+}
+
 .lightbox {
   position: fixed;
   inset: 0;
