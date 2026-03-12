@@ -633,9 +633,8 @@ function validateOrderFields({ fullName, email, telegram }) {
   }
 
   const telegramUsernamePattern = /^@?[a-zA-Z0-9_]{5,32}$/;
-  const telegramChatIdPattern = /^-?\d{5,20}$/;
-  if (!telegramUsernamePattern.test(telegram) && !telegramChatIdPattern.test(telegram)) {
-    return 'Укажите Telegram username или числовой chat_id.';
+  if (!telegramUsernamePattern.test(telegram)) {
+    return 'Укажите корректный Telegram username.';
   }
 
   return '';
@@ -643,14 +642,7 @@ function validateOrderFields({ fullName, email, telegram }) {
 
 function normalizeTelegramUsername(value) {
   const trimmed = value.trim();
-  if (/^-?\d{5,20}$/.test(trimmed)) return null;
   return trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
-}
-
-function normalizeTelegramChatId(value) {
-  const trimmed = value.trim();
-  if (/^-?\d{5,20}$/.test(trimmed)) return trimmed;
-  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
 }
 
 function toWebhookPhotoId(photoUrl) {
@@ -699,7 +691,7 @@ function buildOrderPayload(customer) {
 
   return {
     order_id: orderId,
-    telegram_chat_id: normalizeTelegramChatId(customer.telegram),
+    telegram_chat_id: '',
     telegram_username: normalizeTelegramUsername(customer.telegram),
     photo_ids: photoIds,
     github_owner: WEBHOOK_ORDER_CONFIG.githubOwner,

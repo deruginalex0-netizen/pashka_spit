@@ -1,0 +1,277 @@
+{
+  "name": "Photo Orders Store API (Webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "photo-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111101",
+      "name": "Webhook — Receive Order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 200],
+      "webhookId": "photo-order"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-secret",
+              "leftValue": "={{ $json.headers['x-webhook-secret'] || $json.headers['X-Webhook-Secret'] || '' }}",
+              "rightValue": "whsec_83a2c18c7719671edb0cd08b2dfba88f8200d8683c76509f",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111102",
+      "name": "IF — Verify Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [240, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-order-id",
+              "leftValue": "={{ String(!!$json.body.order_id) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-telegram-username",
+              "leftValue": "={{ String(!!$json.body.telegram_username) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-photo-ids",
+              "leftValue": "={{ String(Array.isArray($json.body.photo_ids) && $json.body.photo_ids.length > 0) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111103",
+      "name": "IF — Validate Order Payload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 120]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body = $('Webhook — Receive Order').first().json.body || {};\nconst store = getWorkflowStaticData('global');\n\nif (!store.pendingOrders) {\n  store.pendingOrders = {};\n}\n\nconst now = Date.now();\nconst ttlMs = 2 * 24 * 60 * 60 * 1000;\n\n// Cleanup expired orders\nfor (const [key, value] of Object.entries(store.pendingOrders)) {\n  if (!value || !value.created_at || now - value.created_at > ttlMs) {\n    delete store.pendingOrders[key];\n  }\n}\n\nconst orderId = String(body.order_id || '').trim();\nconst username = String(body.telegram_username || '').trim().replace(/^@/, '').toLowerCase();\nconst photoIds = Array.isArray(body.photo_ids) ? body.photo_ids.map((x) => String(x)).filter(Boolean) : [];\n\nconst order = {\n  order_id: orderId,\n  telegram_username: username,\n  customer_full_name: body.customer_full_name || '',\n  customer_email: body.customer_email || '',\n  photo_ids: photoIds,\n  github_owner: body.github_owner || 'deruginalex0-netizen',\n  github_repo: body.github_repo || 'pashka_spit',\n  created_at: now\n};\n\nstore.pendingOrders[orderId] = order;\n\nreturn [{\n  json: {\n    status: 'ok',\n    message: 'Order accepted',\n    order_id: orderId,\n    bot_link: `https://t.me/AAAAAAA_blya_bot?start=${encodeURIComponent(orderId)}`\n  }\n}];"
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111104",
+      "name": "Code — Save Pending Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 120]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111105",
+      "name": "Respond 200 — Order Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1000, 120]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"error\",\"message\":\"Invalid payload. Required: order_id, telegram_username, photo_ids[]\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111106",
+      "name": "Respond 400 — Invalid Payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"error\",\"message\":\"Unauthorized\"}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111107",
+      "name": "Respond 403 — Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 420]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "order-consume",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111108",
+      "name": "Webhook — Consume Order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 620],
+      "webhookId": "order-consume"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const query = $('Webhook — Consume Order').first().json.query || {};\nconst store = getWorkflowStaticData('global');\nif (!store.pendingOrders) {\n  store.pendingOrders = {};\n}\n\nconst secret = String(query.secret || '');\nif (secret !== 'whsec_83a2c18c7719671edb0cd08b2dfba88f8200d8683c76509f') {\n  return [{ json: { status: 'error', code: 'unauthorized', message: 'Unauthorized' } }];\n}\n\nconst orderId = String(query.order_id || '').trim();\nif (!orderId) {\n  return [{ json: { status: 'error', code: 'invalid_request', message: 'order_id is required' } }];\n}\n\nconst order = store.pendingOrders[orderId];\nif (!order) {\n  return [{ json: { status: 'error', code: 'not_found', message: 'Order not found or already delivered' } }];\n}\n\nconst requestUsername = String(query.telegram_username || '').trim().replace(/^@/, '').toLowerCase();\nif (order.telegram_username && requestUsername && order.telegram_username !== requestUsername) {\n  return [{ json: { status: 'error', code: 'username_mismatch', message: 'This order belongs to another Telegram username' } }];\n}\n\n// Consume order once: remove from store after successful claim\ndelete store.pendingOrders[orderId];\n\nreturn [{\n  json: {\n    status: 'ok',\n    order\n  }\n}];"
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111109",
+      "name": "Code — Consume Pending Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 620]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "6f2f03fd-01e3-4b60-a001-111111111110",
+      "name": "Respond 200 — Consume Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 620]
+    }
+  ],
+  "connections": {
+    "Webhook — Receive Order": {
+      "main": [
+        [
+          {
+            "node": "IF — Verify Secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Verify Secret": {
+      "main": [
+        [
+          {
+            "node": "IF — Validate Order Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 403 — Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Validate Order Payload": {
+      "main": [
+        [
+          {
+            "node": "Code — Save Pending Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400 — Invalid Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Save Pending Order": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 — Order Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook — Consume Order": {
+      "main": [
+        [
+          {
+            "node": "Code — Consume Pending Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Consume Pending Order": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 — Consume Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

@@ -1,0 +1,345 @@
+{
+  "name": "Photo Delivery on Bot Start",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222201",
+      "name": "Telegram Trigger — Start",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [0, 220],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const msg = $json.message || {};\nconst text = String(msg.text || '').trim();\nconst chatId = String(msg.chat?.id || '');\nconst username = String(msg.from?.username || '').trim();\n\nif (!text.startsWith('/start')) {\n  return [{ json: { status: 'ignore', chat_id: chatId, telegram_username: username } }];\n}\n\nconst parts = text.split(/\\s+/);\nconst orderId = parts[1] ? parts[1].trim() : '';\nif (!orderId) {\n  return [{ json: { status: 'missing_order_id', chat_id: chatId, telegram_username: username } }];\n}\n\nif (!username) {\n  return [{ json: { status: 'missing_username', chat_id: chatId, telegram_username: '' } }];\n}\n\nreturn [{\n  json: {\n    status: 'ok',\n    chat_id: chatId,\n    order_id: orderId,\n    telegram_username: username.replace(/^@/, '').toLowerCase()\n  }\n}];"
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222202",
+      "name": "Code — Parse Start Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-start-ok",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222203",
+      "name": "IF — Has Valid Start",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [500, 220]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "=Пожалуйста, откройте бота по ссылке из сайта после оформления заказа.",
+        "additionalFields": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222204",
+      "name": "Telegram — Send Help",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [760, 420],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://n8n.deryugin777.ru/webhook/order-consume?order_id=' + encodeURIComponent($json.order_id) + '&telegram_username=' + encodeURIComponent($json.telegram_username) + '&secret=' + encodeURIComponent('whsec_83a2c18c7719671edb0cd08b2dfba88f8200d8683c76509f') }}",
+        "options": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222205",
+      "name": "HTTP Request — Consume Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-consume-ok",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222206",
+      "name": "IF — Consume Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1010, 80]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $('Code — Parse Start Command').first().json.chat_id }}",
+        "text": "={{ $json.message || 'Заказ не найден или уже был выдан.' }}",
+        "additionalFields": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222207",
+      "name": "Telegram — Send Consume Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1260, 260],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const payload = $json;\nif (payload.status !== 'ok' || !payload.order) return [];\n\nconst order = payload.order;\nconst chatId = $('Code — Parse Start Command').first().json.chat_id;\nconst photoIds = Array.isArray(order.photo_ids) ? order.photo_ids : [];\nconst githubOwner = order.github_owner || 'deruginalex0-netizen';\nconst githubRepo = order.github_repo || 'pashka_spit';\n\nreturn photoIds.map((photoId, index) => ({\n  json: {\n    chat_id: chatId,\n    order_id: order.order_id,\n    photo_id: photoId,\n    index: index + 1,\n    github_owner: githubOwner,\n    github_repo: githubRepo,\n    download_url: `https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/main/photos/${photoId}.jpg`\n  }\n}));"
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222208",
+      "name": "Code — Split Photos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 40]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "photo"
+            }
+          }
+        }
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222209",
+      "name": "HTTP Request — Download Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1490, 40]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $json.chat_id }}",
+        "binaryPropertyName": "photo",
+        "additionalFields": {
+          "caption": "=📸 Заказ #{{ $json.order_id }} — фото {{ decodeURIComponent($json.photo_id) }}"
+        }
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222210",
+      "name": "Telegram — Send Photo",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1730, 40],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!items.length) return [];\nconst first = items[0].json;\nreturn [{ json: { chat_id: first.chat_id, order_id: first.order_id, total_photos: items.length } }];"
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222211",
+      "name": "Code — Build Confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1960, 40]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "=✅ Заказ #{{ $json.order_id }} доставлен!\\n\\nВсего фото: {{ $json.total_photos }}",
+        "additionalFields": {}
+      },
+      "id": "ab381f0d-89b4-4f19-9152-222222222212",
+      "name": "Telegram — Send Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2190, 40],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger — Start": {
+      "main": [
+        [
+          {
+            "node": "Code — Parse Start Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Parse Start Command": {
+      "main": [
+        [
+          {
+            "node": "IF — Has Valid Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Has Valid Start": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request — Consume Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram — Send Help",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request — Consume Order": {
+      "main": [
+        [
+          {
+            "node": "IF — Consume Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Consume Success": {
+      "main": [
+        [
+          {
+            "node": "Code — Split Photos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram — Send Consume Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Split Photos": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request — Download Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request — Download Photo": {
+      "main": [
+        [
+          {
+            "node": "Telegram — Send Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram — Send Photo": {
+      "main": [
+        [
+          {
+            "node": "Code — Build Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Build Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Telegram — Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}
