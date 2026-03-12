@@ -721,7 +721,7 @@ async function sendOrderToWebhook(order) {
   }
 
   const responseText = await response.text();
-  let result = {};
+  let result = null;
 
   if (responseText) {
     try {
@@ -731,11 +731,36 @@ async function sendOrderToWebhook(order) {
     }
   }
 
-  if (!response.ok || result.status !== 'ok') {
-    throw new Error(result.message || `Ошибка webhook (HTTP ${response.status}).`);
+  if (!response.ok) {
+    const message =
+      result && typeof result === 'object' && 'message' in result
+        ? String(result.message)
+        : `Ошибка webhook (HTTP ${response.status}).`;
+    throw new Error(message);
   }
 
-  return result;
+  if (!responseText) {
+    throw new Error('Webhook вернул пустой ответ. Проверьте, что активен правильный workflow обработки заказа.');
+  }
+
+  const normalized = Array.isArray(result) ? result[0] : result;
+  if (!normalized || typeof normalized !== 'object') {
+    throw new Error(`Некорректный ответ webhook (HTTP ${response.status}).`);
+  }
+
+  if ('status' in normalized && normalized.status !== 'ok') {
+    throw new Error(
+      'message' in normalized && normalized.message
+        ? String(normalized.message)
+        : `Ошибка webhook (HTTP ${response.status}).`
+    );
+  }
+
+  if (!('order_id' in normalized) || !normalized.order_id) {
+    throw new Error('Webhook не вернул order_id. Проверьте ответ ноды Respond 200.');
+  }
+
+  return normalized;
 }
 
 async function handleOrderSubmit(event) {
@@ -776,8 +801,12 @@ async function handleOrderSubmit(event) {
   try {
     const order = buildOrderPayload(customer);
     const result = await sendOrderToWebhook(order);
-    const deliveredOrderId = result.order_id || order.order_id;
-    setOrderBotLink(deliveredOrderId);
+    if (result.bot_link) {
+      elements.orderBotLink.href = String(result.bot_link);
+    } else {
+      const deliveredOrderId = result.order_id || order.order_id;
+      setOrderBotLink(deliveredOrderId);
+    }
     clearCart();
     elements.orderForm.reset();
     closeOrderModal();
