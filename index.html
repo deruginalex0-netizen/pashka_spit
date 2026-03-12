@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Спящий Пашка</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&display=swap&subset=cyrillic"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow bg-glow--left"></div>
+    <div class="bg-glow bg-glow--right"></div>
+
+    <header class="header shell">
+      <nav class="header__categories" aria-label="Категории">
+        <span class="tabs-indicator" id="tabs-indicator" aria-hidden="true"></span>
+        <button class="chip is-active" data-category-filter="all">Все фото</button>
+        <button class="chip" data-category-filter="nature">На природе</button>
+        <button class="chip" data-category-filter="floor">На полу</button>
+        <button class="chip" data-category-filter="friends">С друзьями</button>
+        <button class="chip" data-category-filter="party">На вечеринке</button>
+        <button class="chip" data-category-filter="closeup">Крупный план</button>
+        <button class="chip" data-category-filter="couch">На диване</button>
+        <button class="chip" data-category-filter="objects">Коллекция "Павел и предметы"</button>
+      </nav>
+
+      <button class="cart-btn" id="open-cart" aria-label="Открыть корзину">
+        <span class="cart-btn__label">Корзина</span>
+        <span class="cart-btn__count-wrap">
+          <span class="cart-btn__count" id="cart-count">0</span>
+        </span>
+      </button>
+    </header>
+
+    <main class="shell">
+      <section class="hero-quote reveal">
+        <div>
+          <p class="eyebrow">Сонная хроника</p>
+          <h1>
+            Пашка не помнит эти моменты. Но мы помним. И чтобы не забыть, теперь у каждого есть возможность
+            приобрести себе частичку этих воспоминаний
+          </h1>
+          <p>
+            Стоимость одного фото всего 10 рублей. Все деньги пойдут в фонд помощи людям с расстройством сна
+          </p>
+        </div>
+      </section>
+
+      <section class="gallery" id="gallery"></section>
+    </main>
+
+    <aside class="cart" id="cart-panel" aria-label="Корзина">
+      <div class="cart__header">
+        <h3>Корзина</h3>
+        <button class="icon-btn" id="close-cart" aria-label="Закрыть корзину">×</button>
+      </div>
+
+      <ul class="cart__list" id="cart-list"></ul>
+
+      <div class="cart__footer">
+        <button class="btn cart__clear" id="clear-cart">Удалить всё</button>
+        <div class="cart__total">
+          <span>Итого</span>
+          <strong id="cart-total">0 ₽</strong>
+        </div>
+        <button class="btn cart__checkout">Оформить</button>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="lightbox" id="lightbox" aria-hidden="true">
+      <button class="lightbox__close" id="close-lightbox" aria-label="Закрыть фото">×</button>
+      <img id="lightbox-image" src="" alt="" />
+    </div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"
+      defer
+    ></script>
+    <script src="./script.js" defer></script>
+  </body>
+</html>
