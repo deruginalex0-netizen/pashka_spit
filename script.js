@@ -109,7 +109,7 @@ const WEBHOOK_ORDER_CONFIG = {
   githubOwner: 'deruginalex0-netizen',
   githubRepo: 'pashka_spit',
   // Используйте ссылку на бота без параметра start, order_id добавится автоматически.
-  activationBotUrl: 'https://t.me/your_photo_delivery_bot',
+  activationBotUrl: 'https://t.me/AAAAAAA_blya_bot',
 };
 
 const state = {
