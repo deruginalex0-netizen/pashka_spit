@@ -365,7 +365,11 @@ export function initAccountUI() {
 
   // Logout
   els.accountLogout()?.addEventListener('click', async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
     closeAccountModal();
   });
 

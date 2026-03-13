@@ -12,14 +12,8 @@ window.__auth = {
 // Init gallery app (was previously auto-called in script.js)
 initApp();
 
-// Init auth and account UI
-async function bootstrap() {
-  try {
-    await initAuth();
-  } catch (err) {
-    console.error('Auth init failed:', err);
-  }
-  initAccountUI();
-}
+// Init account UI immediately so buttons work
+initAccountUI();
 
-bootstrap();
+// Init auth in background (will update UI when ready)
+initAuth().catch((err) => console.error('Auth init failed:', err));
