@@ -364,12 +364,8 @@ export function initAccountUI() {
   els.accountSave()?.addEventListener('click', handleProfileSave);
 
   // Logout
-  els.accountLogout()?.addEventListener('click', async () => {
-    try {
-      await signOut();
-    } catch (err) {
-      console.error('Sign out error:', err);
-    }
+  els.accountLogout()?.addEventListener('click', () => {
+    signOut().catch((err) => console.error('Sign out error:', err));
     closeAccountModal();
   });
 
