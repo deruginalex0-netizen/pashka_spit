@@ -63,12 +63,17 @@ export async function signInWithEmail({ email, password }) {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-
+  // Сначала чистим локальное состояние — UI обновится сразу
   currentUser = null;
   currentProfile = null;
   notifyListeners();
+
+  // Потом пытаемся разлогиниться на сервере (scope: 'local' не шлёт запрос на сервер)
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+  } catch (err) {
+    console.error('signOut error:', err);
+  }
 }
 
 // ─── Profile ────────────────────────────────────────────────
@@ -79,6 +84,17 @@ export async function fetchProfile(userId) {
     .select('*')
     .eq('id', userId)
     .single();
+
+  if (error && error.code === 'PGRST116') {
+    // Профиль не найден — создаём (триггер мог не сработать)
+    const { data: newProfile, error: insertErr } = await supabase
+      .from('profiles')
+      .insert({ id: userId, full_name: '' })
+      .select()
+      .single();
+    if (insertErr) throw insertErr;
+    return newProfile;
+  }
 
   if (error) throw error;
   return data;
