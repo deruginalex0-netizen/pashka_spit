@@ -14,7 +14,11 @@ initApp();
 
 // Init auth and account UI
 async function bootstrap() {
-  await initAuth();
+  try {
+    await initAuth();
+  } catch (err) {
+    console.error('Auth init failed:', err);
+  }
   initAccountUI();
 }
 
