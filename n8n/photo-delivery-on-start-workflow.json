@@ -141,7 +141,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const payload = $json;\nif (payload.status !== 'ok' || !payload.order) return [];\n\nconst order = payload.order;\nconst chatId = $('Code — Parse Start Command').first().json.chat_id;\nconst photoIds = Array.isArray(order.photo_ids) ? order.photo_ids : [];\nconst githubOwner = order.github_owner || 'deruginalex0-netizen';\nconst githubRepo = order.github_repo || 'pashka_spit';\n\nreturn photoIds.map((photoId, index) => ({\n  json: {\n    chat_id: chatId,\n    order_id: order.order_id,\n    photo_id: photoId,\n    index: index + 1,\n    github_owner: githubOwner,\n    github_repo: githubRepo,\n    download_url: `https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/main/photos/${photoId}.jpg`\n  }\n}));"
+        "jsCode": "const payload = $json;\nif (payload.status !== 'ok' || !payload.order) return [];\n\nconst order = payload.order;\nconst chatId = $('Code — Parse Start Command').first().json.chat_id;\nconst photoIds = Array.isArray(order.photo_ids) ? order.photo_ids : [];\nconst githubOwner = order.github_owner || 'deruginalex0-netizen';\nconst githubRepo = order.github_repo || 'pashka_spit';\n\nreturn photoIds.map((photoId, index) => ({\n  json: {\n    chat_id: chatId,\n    order_id: order.order_id,\n    photo_id: photoId,\n    index: index + 1,\n    github_owner: githubOwner,\n    github_repo: githubRepo,\n    download_url: `https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/main/public/photos/${photoId}.jpg`\n  }\n}));"
       },
       "id": "ab381f0d-89b4-4f19-9152-222222222208",
       "name": "Code — Split Photos",
