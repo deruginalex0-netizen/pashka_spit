@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
 // ─── Supabase config ────────────────────────────────────────
-// ВАЖНО: замените на реальные значения из вашего проекта Supabase
 const SUPABASE_URL = 'https://ttxwccansmhwgnqwxgjz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eHdjY2Fuc21od2ducXd4Z2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MDMxMTYsImV4cCI6MjA4ODk3OTExNn0.Eau-tm7Jjj0Z-p5SwP-4hgXwbwm8RScbZLQ3gPz5V7E';
 
@@ -63,12 +62,10 @@ export async function signInWithEmail({ email, password }) {
 }
 
 export async function signOut() {
-  // Сначала чистим локальное состояние — UI обновится сразу
   currentUser = null;
   currentProfile = null;
   notifyListeners();
 
-  // Потом пытаемся разлогиниться на сервере (scope: 'local' не шлёт запрос на сервер)
   try {
     await supabase.auth.signOut({ scope: 'local' });
   } catch (err) {
@@ -86,17 +83,23 @@ export async function fetchProfile(userId) {
     .single();
 
   if (error && error.code === 'PGRST116') {
-    // Профиль не найден — создаём (триггер мог не сработать)
+    // Профиль не найден — создаём
     const { data: newProfile, error: insertErr } = await supabase
       .from('profiles')
       .insert({ id: userId, full_name: '' })
       .select()
       .single();
-    if (insertErr) throw insertErr;
+    if (insertErr) {
+      console.error('Profile insert error:', insertErr);
+      return null;
+    }
     return newProfile;
   }
 
-  if (error) throw error;
+  if (error) {
+    console.error('Profile fetch error:', error);
+    return null;
+  }
   return data;
 }
 
@@ -130,26 +133,32 @@ export async function fetchOrders() {
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Orders fetch error:', error);
+    return [];
+  }
   return data || [];
 }
 
 // ─── Init ───────────────────────────────────────────────────
 
 export async function initAuth() {
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  // НЕ async callback — чтобы не блокировать signInWithPassword
+  supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
       currentUser = session.user;
-      try {
-        currentProfile = await fetchProfile(session.user.id);
-      } catch {
-        currentProfile = null;
-      }
+      // Сразу обновляем UI с email (без ожидания профиля)
+      notifyListeners();
+      // Загружаем профиль в фоне
+      fetchProfile(session.user.id).then((profile) => {
+        currentProfile = profile;
+        notifyListeners();
+      });
     } else {
       currentUser = null;
       currentProfile = null;
+      notifyListeners();
     }
-    notifyListeners();
   });
 
   const {
@@ -158,11 +167,10 @@ export async function initAuth() {
 
   if (session?.user) {
     currentUser = session.user;
-    try {
-      currentProfile = await fetchProfile(session.user.id);
-    } catch {
-      currentProfile = null;
-    }
     notifyListeners();
+    fetchProfile(session.user.id).then((profile) => {
+      currentProfile = profile;
+      notifyListeners();
+    });
   }
 }
