@@ -858,3 +858,260 @@ button {
     pointer-events: auto;
   }
 }
+
+/* ─── Auth button ──────────────────────────────────────── */
+
+.header__actions {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header__actions .cart-btn {
+  grid-column: unset;
+  justify-self: unset;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(90, 71, 52, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 250, 238, 0.76);
+  color: var(--paper-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.auth-btn:hover {
+  background: #f6ead2;
+  border-color: rgba(90, 71, 52, 0.6);
+}
+
+.auth-btn__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.auth-btn__label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Auth tabs ────────────────────────────────────────── */
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(90, 71, 52, 0.22);
+}
+
+.auth-tabs__tab {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--paper-muted);
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.auth-tabs__tab:hover {
+  color: var(--paper-ink);
+}
+
+.auth-tabs__tab.is-active {
+  color: var(--paper-ink);
+  border-bottom-color: var(--paper-accent);
+}
+
+/* ─── Auth forms ───────────────────────────────────────── */
+
+.auth-form {
+  display: none;
+  padding: 16px;
+  gap: 12px;
+}
+
+.auth-form.is-active {
+  display: grid;
+}
+
+/* ─── Account modal ────────────────────────────────────── */
+
+.modal__dialog--auth {
+  width: min(440px, 96vw);
+}
+
+.modal__dialog--account {
+  width: min(500px, 96vw);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.account-section {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border-bottom: 1px solid rgba(90, 71, 52, 0.14);
+}
+
+.account-section:last-child {
+  border-bottom: none;
+}
+
+.account-section--footer {
+  padding: 12px 16px 16px;
+}
+
+.account-section__title {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--paper-stamp);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+
+.account-logout-btn {
+  width: 100%;
+  border-radius: 10px;
+  color: var(--paper-accent);
+  background: transparent;
+  border: 1px solid rgba(157, 63, 47, 0.3);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.account-logout-btn:hover {
+  background: rgba(157, 63, 47, 0.08);
+  border-color: rgba(157, 63, 47, 0.5);
+}
+
+/* ─── Orders list ──────────────────────────────────────── */
+
+.orders-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.orders-empty,
+.orders-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--paper-muted);
+  font-size: 0.9rem;
+}
+
+.order-card {
+  padding: 12px;
+  border: 1px solid rgba(88, 67, 48, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 250, 240, 0.92);
+}
+
+.order-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.order-card__date {
+  font-size: 0.84rem;
+  color: var(--paper-muted);
+}
+
+.order-card__status {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.order-card__status--pending {
+  background: rgba(215, 180, 135, 0.35);
+  color: #7a5c32;
+}
+
+.order-card__status--delivered {
+  background: rgba(76, 153, 76, 0.15);
+  color: #2d6e2d;
+}
+
+.order-card__status--expired {
+  background: rgba(157, 63, 47, 0.12);
+  color: var(--paper-accent);
+}
+
+.order-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.order-card__photos {
+  color: var(--paper-muted);
+}
+
+.order-card__price {
+  font-weight: 700;
+}
+
+/* ─── Auth hint in order form ──────────────────────────── */
+
+.order-form__auth-hint {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--paper-muted);
+  margin: 0;
+}
+
+.order-form__auth-hint a {
+  color: var(--paper-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─── Responsive overrides ─────────────────────────────── */
+
+@media (max-width: 1080px) {
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .auth-btn__label {
+    display: none;
+  }
+
+  .auth-btn {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  .auth-btn__label {
+    display: none;
+  }
+}

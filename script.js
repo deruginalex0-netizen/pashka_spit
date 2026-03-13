@@ -150,9 +150,7 @@ const elements = {
   closeLightbox: document.getElementById('close-lightbox'),
 };
 
-init();
-
-function init() {
+export function init() {
   registerFlipPlugin();
   bindCategoryFilters();
   initSlideTabs();
@@ -591,9 +589,29 @@ function closeCart() {
 
 function openOrderModal() {
   closeCart();
+  prefillOrderFormFromAuth();
   elements.orderModal.classList.add('is-open');
   elements.orderModal.setAttribute('aria-hidden', 'false');
   elements.orderFullName.focus();
+}
+
+function prefillOrderFormFromAuth() {
+  const auth = window.__auth;
+  if (!auth) return;
+
+  const user = auth.getCurrentUser();
+  const profile = auth.getCurrentProfile();
+  if (!user) return;
+
+  if (profile?.full_name && !elements.orderFullName.value) {
+    elements.orderFullName.value = profile.full_name;
+  }
+  if (user.email && !elements.orderEmail.value) {
+    elements.orderEmail.value = user.email;
+  }
+  if (profile?.telegram_username && !elements.orderTelegram.value) {
+    elements.orderTelegram.value = '@' + profile.telegram_username;
+  }
 }
 
 function closeOrderModal() {
@@ -689,8 +707,12 @@ function buildOrderPayload(customer) {
   );
   const orderId = buildOrderId();
 
+  const auth = window.__auth;
+  const userId = auth?.getCurrentUser()?.id || null;
+
   return {
     order_id: orderId,
+    user_id: userId,
     telegram_chat_id: '',
     telegram_username: normalizeTelegramUsername(customer.telegram),
     photo_ids: photoIds,

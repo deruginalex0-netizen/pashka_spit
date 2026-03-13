@@ -170,10 +170,10 @@
     {
       "parameters": {
         "operation": "sendPhoto",
-        "chatId": "={{ $json.chat_id }}",
+        "chatId": "={{ $('Code — Split Photos').item.json.chat_id }}",
         "binaryPropertyName": "photo",
         "additionalFields": {
-          "caption": "=📸 Заказ #{{ $json.order_id }} — фото {{ decodeURIComponent($json.photo_id) }}"
+          "caption": "=📸 Заказ #{{ $('Code — Split Photos').item.json.order_id }} — фото {{ decodeURIComponent($('Code — Split Photos').item.json.photo_id) }}"
         }
       },
       "id": "ab381f0d-89b4-4f19-9152-222222222210",
@@ -191,7 +191,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "if (!items.length) return [];\nconst first = items[0].json;\nreturn [{ json: { chat_id: first.chat_id, order_id: first.order_id, total_photos: items.length } }];"
+        "jsCode": "if (!items.length) return [];\nconst first = $('Code — Split Photos').first().json;\nreturn [{ json: { chat_id: first.chat_id, order_id: first.order_id, total_photos: items.length } }];"
       },
       "id": "ab381f0d-89b4-4f19-9152-222222222211",
       "name": "Code — Build Confirmation",
